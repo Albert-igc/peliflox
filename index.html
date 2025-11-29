@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlow | Database Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- ESTILOS CSS (Mismo diseño sofisticado) --- */
+        :root {
+            --bg-color: #0f0f13;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --primary: #6C63FF;
+            --accent: #29b6f6;
+            --text-main: #ffffff;
+            --text-secondary: #a0a0a0;
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.15) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(41, 182, 246, 0.15) 0%, transparent 20%);
+        }
+
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 5%; background: rgba(15, 15, 19, 0.8);
+            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;
+            border-bottom: var(--glass-border);
+        }
+
+        .logo { font-weight: 800; font-size: 1.5rem; letter-spacing: -1px; background: linear-gradient(to right, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .admin-toggle {
+            background: var(--card-bg); border: var(--glass-border); color: var(--text-main);
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.3s; font-size: 0.9rem;
+        }
+        .admin-toggle:hover { background: var(--primary); border-color: var(--primary); }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+        .filters { display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px; }
+        .filter-btn {
+            background: transparent; border: var(--glass-border); color: var(--text-secondary);
+            padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .filter-btn.active, .filter-btn:hover { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); font-weight: 600; }
+
+        #adminPanel {
+            display: none; background: var(--card-bg); border: var(--glass-border);
+            padding: 30px; border-radius: var(--radius); margin-bottom: 40px;
+            animation: slideDown 0.4s ease;
+        }
+
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem; }
+        input, select {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.3);
+            border: var(--glass-border); border-radius: 8px; color: white; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .btn-upload {
+            background: linear-gradient(135deg, var(--primary), var(--accent)); border: none;
+            color: white; padding: 15px; width: 100%; border-radius: 8px; font-weight: 600;
+            cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
+            transition: transform 0.2s;
+        }
+        .btn-upload:active { transform: scale(0.98); }
+
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+
+        .video-card {
+            background: var(--card-bg); border: var(--glass-border); border-radius: var(--radius);
+            overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative; display: flex; flex-direction: column;
+        }
+        .video-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        .thumbnail-container { width: 100%; height: 180px; background: #000; position: relative; }
+        .video-card video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .card-content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 5px; }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; }
+        .card-meta { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px; }
+        
+        .btn-delete {
+            margin-top: auto;
+            background: rgba(255, 80, 80, 0.2); border: 1px solid rgba(255, 80, 80, 0.3);
+            color: #ff6b6b; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+        }
+        .btn-delete:hover { background: rgba(255, 80, 80, 0.4); }
+
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-secondary); }
+        .loading { grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--primary); }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) { .upload-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">StreamFlow.</div>
+        <button class="admin-toggle" onclick="toggleAdmin()"> Modo Admin</button>
+    </nav>
+
+    <div class="container">
+        <div id="adminPanel">
+            <h2 style="margin-bottom: 20px;">Subir Nuevo Video (Persistente)</h2>
+            <div class="upload-grid">
+                <div class="form-group">
+                    <label>Título del Video</label>
+                    <input type="text" id="videoTitle" placeholder="Ej: Resumen del Partido...">
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="videoCategory">
+                        <option value="Deportes">Deportes</option>
+                        <option value="Comedia">Comedia</option>
+                        <option value="Noticias">Noticias</option>
+                        <option value="Tecnologia">Tecnología</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Archivo de Video</label>
+                <input type="file" id="videoFile" accept="video/*">
+            </div>
+            <button class="btn-upload" id="uploadBtn" onclick="saveVideo()">Publicar y Guardar</button>
+            <p style="font-size: 0.8rem; color: #a0a0a0; margin-top: 10px; text-align: center;">
+                * Los videos se guardan en la base de datos de tu navegador.
+            </p>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterVideos('Todo', this)">Todo</button>
+            <button class="filter-btn" onclick="filterVideos('Deportes', this)">Deportes</button>
+            <button class="filter-btn" onclick="filterVideos('Comedia', this)">Comedia</button>
+            <button class="filter-btn" onclick="filterVideos('Noticias', this)">Noticias</button>
+            <button class="filter-btn" onclick="filterVideos('Tecnologia', this)">Tecnología</button>
+        </div>
+
+        <div class="video-grid" id="videoGrid">
+            <div class="loading">Cargando base de datos...</div>
+        </div>
+    </div>
+
+    <script>
+        /* --- LÓGICA DE BASE DE DATOS (IndexedDB) --- */
+        let db;
+        let allVideos = []; // Cache local para filtrado rápido
+
+        // 1. Abrir/Crear la Base de Datos
+        const request = indexedDB.open("StreamFlowDB", 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            // Crear un almacén de objetos (ObjectStore) llamado "videos"
+            // keyPath es como el ID único
+            const objectStore = db.createObjectStore("videos", { keyPath: "id", autoIncrement: true });
+            objectStore.createIndex("category", "category", { unique: false });
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            console.log("Base de datos conectada");
+            loadVideosFromDB(); // Cargar videos al iniciar
+        };
+
+        request.onerror = function(event) {
+            console.error("Error en DB:", event.target.errorCode);
+            document.getElementById('videoGrid').innerHTML = '<div class="empty-state">Error al cargar la base de datos.</div>';
+        };
+
+        // 2. Función para Guardar Video
+        function saveVideo() {
+            const titleInput = document.getElementById('videoTitle');
+            const categoryInput = document.getElementById('videoCategory');
+            const fileInput = document.getElementById('videoFile');
+            const btn = document.getElementById('uploadBtn');
+
+            if (!titleInput.value || !fileInput.files[0]) {
+                alert("Completa todos los campos");
+                return;
+            }
+
+            // Efecto de carga
+            btn.innerText = "Guardando en Base de Datos...";
+            btn.disabled = true;
+
+            const file = fileInput.files[0];
+            
+            // Crear objeto de datos
+            const newVideo = {
+                title: titleInput.value,
+                category: categoryInput.value,
+                date: new Date().toLocaleDateString(),
+                fileBlob: file // Guardamos el archivo binario real
+            };
+
+            // Transacción de escritura
+            const transaction = db.transaction(["videos"], "readwrite");
+            const objectStore = transaction.objectStore("videos");
+            const request = objectStore.add(newVideo);
+
+            request.onsuccess = function() {
+                alert("Video guardado correctamente.");
+                titleInput.value = '';
+                fileInput.value = '';
+                btn.innerText = "Publicar y Guardar";
+                btn.disabled = false;
+                loadVideosFromDB(); // Recargar lista
+            };
+
+            request.onerror = function() {
+                alert("Error al guardar. El video puede ser muy pesado para el navegador.");
+                btn.innerText = "Publicar y Guardar";
+                btn.disabled = false;
+            };
+        }
+
+        // 3. Función para Leer Videos
+        function loadVideosFromDB() {
+            const transaction = db.transaction(["videos"], "readonly");
+            const objectStore = transaction.objectStore("videos");
+            const request = objectStore.getAll();
+
+            request.onsuccess = function(event) {
+                allVideos = event.target.result; // Guardar en variable global
+                renderVideos(allVideos);
+            };
+        }
+
+        // 4. Función para Borrar Video
+        function deleteVideo(id) {
+            if(confirm("¿Estás seguro de borrar este video?")) {
+                const transaction = db.transaction(["videos"], "readwrite");
+                const objectStore = transaction.objectStore("videos");
+                objectStore.delete(id);
+                
+                transaction.oncomplete = function() {
+                    loadVideosFromDB();
+                };
+            }
+        }
+
+        /* --- LÓGICA DE INTERFAZ (UI) --- */
+
+        const videoGrid = document.getElementById('videoGrid');
+        const adminPanel = document.getElementById('adminPanel');
+
+        function toggleAdmin() {
+            adminPanel.style.display = (adminPanel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function renderVideos(videosToRender) {
+            videoGrid.innerHTML = ''; 
+
+            if (videosToRender.length === 0) {
+                videoGrid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No hay videos guardados</h3>
+                        <p>Sube videos desde el panel de Admin.</p>
+                    </div>`;
+                return;
+            }
+
+            // Invertimos el array para ver los más nuevos primero
+            [...videosToRender].reverse().forEach(video => {
+                // Crear URL temporal desde el Blob almacenado en la DB
+                const videoURL = URL.createObjectURL(video.fileBlob);
+
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="thumbnail-container">
+                        <video controls preload="metadata">
+                            <source src="${videoURL}" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-tag">${video.category}</span>
+                        <h3 class="card-title">${video.title}</h3>
+                        <div class="card-meta">Subido el ${video.date}</div>
+                        <button class="btn-delete" onclick="deleteVideo(${video.id})">Eliminar Video</button>
+                    </div>
+                `;
+                videoGrid.appendChild(card);
+            });
+        }
+
+        function filterVideos(category, btnElement) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+
+            if (category === 'Todo') {
+                renderVideos(allVideos);
+            } else {
+                const filtered = allVideos.filter(v => v.category === category);
+                renderVideos(filtered);
+            }
+        }
+    </script>
+</body>
+</html>
